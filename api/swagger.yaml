@@ -110,6 +110,14 @@ paths:
                 type: string
         '404':
           description: Size not found
+  /api/whoami:
+    get:
+      operationId: app.whoami
+      summary: Get current user info
+      responses:
+        '200':
+          description: OK
+
 
 components:
   schemas:
