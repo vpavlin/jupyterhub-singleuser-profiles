@@ -49,5 +49,4 @@ setup(
     zip_safe=False,
     install_requires=get_install_requires(),
     tests_require=get_test_requires(),
-    cmdclass={'test': Test},
 )
