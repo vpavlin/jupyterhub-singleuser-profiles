@@ -4,7 +4,9 @@ import yaml
 import json
 import logging
 import re
-from kubernetes.client import V1EnvVar, V1ResourceRequirements, V1ConfigMap, V1ObjectMeta, V1SecurityContext, V1Capabilities, V1SELinuxOptions, V1Volume, V1VolumeMount, V1PersistentVolumeClaimVolumeSource
+from kubernetes.client import V1EnvVar, V1ResourceRequirements, V1ConfigMap, V1ObjectMeta, V1SecurityContext, \
+        V1Capabilities, V1SELinuxOptions, V1Volume, V1VolumeMount, V1PersistentVolumeClaimVolumeSource, \
+        V1ConfigMapVolumeSource, V1KeyToPath, V1EmptyDirVolumeSource
 from kubernetes.client.rest import ApiException
 from openshift.dynamic import DynamicClient
 from .service import Service
@@ -19,7 +21,8 @@ _USER_CONFIG_MAP_TEMPLATE = "jupyterhub-singleuser-profile-%s"
 _USER_CONFIG_PROFILE_NAME = "@singleuser@"
 _GPU_KEY = "nvidia.com/gpu"
 _DEFAULT_USER_CM = {
-        "env":{"AWS_ACCESS_KEY_ID":"", "AWS_SECRET_ACCESS_KEY":""},
+#        "env":{"AWS_ACCESS_KEY_ID":"", "AWS_SECRET_ACCESS_KEY":""},
+        "env": {},
         "gpu":"0",
         "last_selected_image":"",
         "last_selected_size":"",
@@ -312,16 +315,28 @@ class SingleuserProfiles(object):
 
     pod.metadata.labels['jupyterhub.opendatahub.io/user'] = escape(spawner.user.name)
 
-    profile_volumes = profile.get('volumes')
+    for volume in profile.get('volumes'):
+      volume_name = escape(volume['name'])
+      mount_path = self.generate_volume_path(volume.get('mountPath'), default_mount_path, volume_name)
+      sub_path = volume.get('subPath')
 
-    if profile_volumes:
-      for volume in profile_volumes:
-        volume_name = re.sub('[^a-zA-Z0-9\.]', '-', volume['name']).lower()
+      if 'persistentVolumeClaim' in volume:
         read_only = volume['persistentVolumeClaim'].get('readOnly')
         pvc = V1PersistentVolumeClaimVolumeSource(volume['persistentVolumeClaim']['claimName'], read_only=read_only)
-        mount_path = self.generate_volume_path(volume.get('mountPath'), default_mount_path, volume_name)
         pod.spec.volumes.append(V1Volume(name=volume_name, persistent_volume_claim=pvc))
-        pod.spec.containers[0].volume_mounts.append(V1VolumeMount(name=volume_name, mount_path=mount_path))
+      elif 'configMap' in volume:
+        items = None
+        for item in volume['configMap'].get('items', []):
+          if not items:
+            items = []
+          items.append(V1KeyToPath(key=item['key'], path=item['path']))
+        cm = V1ConfigMapVolumeSource(name=volume['configMap'].get('name'), items=items)
+        pod.spec.volumes.append(V1Volume(name=volume_name, config_map=cm))
+      elif 'emptyDir' in volume:
+        pod.spec.volumes.append(V1Volume(name=volume_name, empty_dir={}))
+
+
+      pod.spec.containers[0].volume_mounts.append(V1VolumeMount(name=volume_name, mount_path=mount_path, sub_path=sub_path))
 
     profile_environment = profile.get('env')
 
