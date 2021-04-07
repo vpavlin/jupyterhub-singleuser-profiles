@@ -60,6 +60,18 @@ paths:
                     items:
                       type: string
                   - type: string
+  
+  /api/images/default:
+    get:
+      operationId: jupyterhub_singleuser_profiles.api.api.get_default_image
+      summary: Get the default image, (either one with label or first in list)
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: string
 
   /api/sizes:
     get:
@@ -111,7 +123,7 @@ components:
       type: object
       properties:
         env:
-          type: object
+          type: array
         gpu:
           type: integer
         last_selected_image:
