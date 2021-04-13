@@ -96,6 +96,10 @@ def get_size_by_name(size_name, *args, **kwargs):
     _PROFILES.load_profiles()
     return _PROFILES.get_size(size_name)
 
+@authenticated
+def get_gpu_number(*args, **kwargs):
+    return _PROFILES.openshift.get_gpu_number()
+
 app = connexion.App(__name__, specification_dir='.', options={'swagger_ui':True})
 app.add_api('swagger.yaml')
 
