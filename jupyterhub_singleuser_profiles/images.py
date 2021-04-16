@@ -27,11 +27,21 @@ class Images(object):
 
         return ''
 
+    def tag_exists(self, tag_name, imagestream):
+        for tag in imagestream.spec.tags:
+            if tag_name == tag.name:
+                return True
+
+        return False
+
     def append_option(self, image, result):
         name = image.metadata.name
         if not image.status.tags:
             return
         for tag in image.status.tags:
+            if not self.tag_exists(tag.tag, image):
+                continue
+
             selected = ""
             image_tag = "%s:%s" % (name, tag.tag)
             result.append(image_tag)
