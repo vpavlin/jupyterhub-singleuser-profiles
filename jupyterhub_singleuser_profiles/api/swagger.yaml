@@ -15,6 +15,18 @@ paths:
       responses:
         '200':
           description: OK
+  
+  /api/gpu:
+    get:
+      operationId: jupyterhub_singleuser_profiles.api.api.get_gpu_number
+      summary: Get number of GPUs in all nodes
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: integer
 
   /api/user/configmap:
     get:
