@@ -1,7 +1,9 @@
 from pydantic import BaseModel, ValidationError, validator
-from typing import Union, Dict, Any, Optional
+from typing import Dict, Any, Optional, List
+from enum import Enum
 import json
 import logging
+import yaml
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -40,26 +42,35 @@ class GpuConfig(BaseModel):
         instance = cls(enabled=dict_.get('enabled'), type=dict_.get('type'), config=v)
         return instance
 
+class ImageConfigSort(str, Enum):
+    name = 'name'
+    version = 'version'
+
 class ImageConfig(BaseModel):
     blacklist: list = []
     whitelist: list = []
-    sort: Optional[str] = None
+    sort: Optional[ImageConfigSort] = None
     #Should not be used, can lock a user out.
     #enabled: bool = True
-
-    @validator('sort')
-    def sort_type(cls, v):
-        if v in ['name', 'version']:
-            return v
-        else:
-            raise ValueError('Sort type \"%s\" invalid' % v)
 
 class SizeConfig(BaseModel):
     enabled: Optional[bool] = True
 
+class EnvVarType(str, Enum):
+    text = 'text'
+    password = 'password'
+
+class EnvVar(BaseModel):
+    name: str
+    type: EnvVarType
+
+class EnvVarCategory(BaseModel):
+    name: str
+    variables: List[EnvVar] = None
+
 class EnvVarConfig(BaseModel):
-    freq_keys: Optional[list] = []
     enabled: Optional[bool] = True
+    categories: List[EnvVarCategory] = None
 
 class UIConfigModel(BaseModel):
     gpuConfig: Optional[GpuConfig] = {}
